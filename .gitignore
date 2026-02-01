@@ -1,0 +1,38 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# ML artifacts
+data/
+artifacts/
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.hdf5
+*.safetensors
+*.bin
+*.onnx
+
+# Worktrees
+.worktrees/
+
+# WandB local
+wandb/
+
+# Claude Code
+.claude/settings.local.json
+.claude/CLAUDE.local.md
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,8 @@
+{
+  "event_type": "wandb_run_finished",
+  "client_payload": {
+    "branch": "${run.config.branch}",
+    "run_id": "${run.id}",
+    "run_state": "${run.state}"
+  }
+}

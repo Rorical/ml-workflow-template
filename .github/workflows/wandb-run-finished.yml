@@ -1,0 +1,68 @@
+# Triggered by WandB Automation webhook when a run finishes.
+# Claude Code analyzes results and posts to the PR.
+#
+# Setup instructions: see .claude/rules/wandb.md "Automatic Analysis Pipeline"
+
+name: WandB Run Finished — Auto Analyze
+
+on:
+  repository_dispatch:
+    types: [wandb_run_finished]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Extract payload
+        id: payload
+        env:
+          BRANCH: ${{ github.event.client_payload.branch }}
+          RUN_ID: ${{ github.event.client_payload.run_id }}
+          RUN_STATE: ${{ github.event.client_payload.run_state }}
+        run: |
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
+          echo "run_state=${RUN_STATE}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Analyze results
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+          WANDB_ENTITY: ${{ vars.WANDB_ENTITY }}
+          WANDB_PROJECT: ${{ vars.WANDB_PROJECT }}
+          BRANCH: ${{ steps.payload.outputs.branch }}
+          RUN_ID: ${{ steps.payload.outputs.run_id }}
+          RUN_STATE: ${{ steps.payload.outputs.run_state }}
+        run: |
+          if [ "$RUN_STATE" = "failed" ] || [ "$RUN_STATE" = "crashed" ]; then
+            PROMPT="The WandB run ${RUN_ID} for branch ${BRANCH} has ${RUN_STATE}. \
+              Diagnose the failure using /check-results diagnose --branch ${BRANCH}. \
+              Post a comment on the branch's PR summarizing the failure and suggested fix."
+          else
+            PROMPT="The WandB run ${RUN_ID} for branch ${BRANCH} has finished. \
+              Analyze results: run /check-results summary --branch ${BRANCH}, \
+              then /check-results compare --branch ${BRANCH} to compare vs baseline. \
+              Post results to the PR via /check-results post-pr --branch ${BRANCH}. \
+              If clearly worse than baseline, comment that the branch should be discarded."
+          fi
+
+          claude --print "$PROMPT"

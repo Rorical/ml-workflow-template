@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(pip *)",
+      "Bash(pip3 *)",
+      "Bash(wandb *)",
+      "Bash(gh *)",
+      "Bash(source .venv/bin/activate*)"
+    ]
+  },
+  "env": {
+    "WANDB_ENTITY": "",
+    "WANDB_PROJECT": "",
+    "WANDB_QUEUE": ""
+  }
+}
