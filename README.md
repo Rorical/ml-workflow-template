@@ -37,7 +37,7 @@ Multiple experiments run in parallel. Each gets its own branch, worktree, and Wa
 - **Python 3.10+**
 - **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** — installed and authenticated
 - **[WandB](https://wandb.ai) account** — with a project and a Launch queue configured
-- **GPU environment** — running a WandB Launch agent (cloud or on-prem)
+- **GPU environment** — running a WandB Launch agent (cloud or on-prem). For private repos, the agent must have git credentials to clone the repo (deploy key, `GITHUB_TOKEN`, or credential helper)
 - **GitHub CLI (`gh`)** — installed and authenticated
 - **Git** — with push access to the repo
 

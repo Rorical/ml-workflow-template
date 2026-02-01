@@ -8,6 +8,7 @@ Everything related to running and evaluating experiments is managed through Wand
 - **Agents**: Run in GPU environments, pulling jobs from queues.
 - **Job creation**: Each job is based on the current git repo at a specific branch (one experiment per branch).
 - **Jobs are temporary**: Jobs should not be reused. Errors are expected and require active development on the branch before re-launching.
+- **Private repos**: WandB Launch agents must be able to clone the repo. For private repos, configure git credentials on the agent environment (e.g., `GIT_TERMINAL_PROMPT=0` with a credential helper, deploy key, or `GITHUB_TOKEN`). See WandB Launch docs for details.
 
 ## Experiment Tracking
 
