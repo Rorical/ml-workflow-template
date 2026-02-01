@@ -15,7 +15,6 @@ import subprocess
 import sys
 
 import wandb
-from wandb.sdk.launch import launch_add
 
 
 def get_git_remote_url() -> str:
@@ -58,7 +57,7 @@ def main():
     parser.add_argument("--entity", default=os.environ.get("WANDB_ENTITY"), help="WandB entity (default: $WANDB_ENTITY).")
     parser.add_argument("--entry-point", default="main.py", help="Entry point script (default: main.py).")
     parser.add_argument("--config", default=None, help="JSON string or path to JSON file with run config overrides.")
-    parser.add_argument("--resource", default=None, help="Compute resource type (e.g., local-process, kubernetes).")
+    parser.add_argument("--resource", default="local-process", help="Compute resource type (default: local-process).")
     parser.add_argument("--resource-args", default=None, help="JSON string with resource args.")
     parser.add_argument("--docker-image", default=None, help="Docker image to use instead of building from repo.")
     parser.add_argument("--priority", type=int, default=None, help="Job priority in queue.")
@@ -123,31 +122,41 @@ def main():
         print(f"Config:     {json.dumps(config, indent=2)}")
         return
 
-    # Push job to queue
+    # Push job to queue via CLI (launch_add API requires job/docker_image in wandb>=0.24)
     print(f"Launching job for branch '{args.branch}' (commit {commit[:8]})...")
     print(f"  Repo:    {repo_url}")
     print(f"  Queue:   {args.queue}")
     print(f"  Project: {args.project}")
 
-    queued_run = launch_add(
-        uri=repo_url,
-        job=None,
-        config=config,
-        project=args.project,
-        entity=args.entity,
-        queue_name=args.queue,
-        resource=args.resource,
-        resource_args=resource_args,
-        entry_point=["python", args.entry_point],
-        name=f"{args.branch}-{commit[:8]}",
-        version=args.branch,
-        docker_image=args.docker_image,
-        priority=args.priority,
-    )
+    # Write run config to temp file for --config
+    config_path = os.path.join(os.path.dirname(__file__), ".launch_config.json")
+    with open(config_path, "w") as f:
+        json.dump(config, f)
 
-    print(f"Job queued successfully.")
-    print(f"  Run ID:  {queued_run.id}")
-    print(f"  State:   {queued_run.state}")
+    cmd = [
+        sys.executable, "-m", "wandb", "launch",
+        "--uri", repo_url,
+        "--queue", args.queue,
+        "--project", args.project,
+        "--entity", args.entity,
+        "--entry-point", f"python {args.entry_point}",
+        "--name", f"{args.branch}-{commit[:8]}",
+        "--config", config_path,
+    ]
+    if args.resource:
+        cmd.extend(["--resource", args.resource])
+    if args.docker_image:
+        cmd.extend(["--docker-image", args.docker_image])
+
+    try:
+        result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+        print(result.stdout)
+        if result.stderr:
+            print(result.stderr, file=sys.stderr)
+        print("Job queued successfully.")
+    finally:
+        if os.path.exists(config_path):
+            os.remove(config_path)
 
 
 if __name__ == "__main__":
